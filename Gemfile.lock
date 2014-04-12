@@ -1,0 +1,25 @@
+PATH
+  remote: .
+  specs:
+    pi-slides (0.0.1)
+      puma
+      sinatra
+      trollop
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    puma (1.6.3)
+      rack (~> 1.2)
+    rack (1.5.2)
+    rake (10.2.2)
+    sinatra (1.0)
+      rack (>= 1.0)
+    trollop (2.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  pi-slides!
+  rake

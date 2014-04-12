@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'trollop'
+require 'pi_slides'
+
+opts = Trollop::options do
+  banner <<-EOS
+Usage:
+       fim-shell [options]
+where [options] are:
+EOS
+  opt :port, 'port where fim is listening', :short => :p, :default => 9999
+  opt :host, 'host where fim is running', :default => 'localhost'
+end
+
+fim = PiSlides::Fim.new opts[:host], opts[:port]
+
+def prompt
+  print "> "
+  $stdout.flush
+end
+
+prompt
+while cmd = $stdin.readline
+  cmd.strip!
+  exit if %w(quit exit).include? cmd
+  cmd = "#{cmd};" unless cmd =~ /;$/
+  fim.exec cmd
+  prompt
+end
+

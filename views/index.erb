@@ -1,0 +1,36 @@
+<div data-role="page" data-theme="b" data-url="/">
+
+  <div data-role="header">
+    <h1>PiSlideshow</h1>
+  </div>
+
+  <div data-role="main" class="ui-content">
+
+    <form method="post" action="/">
+      <input type="hidden" name="user_action" value="" />
+      <div data-role="fieldcontain">
+        <label for="autoplay">Autoplay</label>
+        <select name="autoplay" data-role="slider">
+          <option value="off"<%= ' selected="selected"' if !@slideshow.running? %>>Off</option>
+          <option value="on"<%= ' selected="selected"' if @slideshow.running? %>>On</option>
+        </select>
+      </div>
+
+      <% if @slideshow.running? %>
+        <div data-role="fieldcontain">
+          <label for="interval">Interval (seconds)</label>
+          <input name="interval" min="5" max="300" step="1" data-highlight="true" value="<%= @slideshow.interval %>" type="range" />
+        </div>
+      <% end %>
+
+      <button type="submit" name="next" class="ui-btn">Next</button>
+      <button type="submit" name="toggle_autowidth" class="ui-btn">Toggle Auto Width</button>
+    </form>
+
+
+  </div>
+
+  <div data-role="footer">
+  </div>
+
+</div>

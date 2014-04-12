@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+
+require 'trollop'
+require 'pi_slides'
+
+
+opts = Trollop::options do
+  banner <<-EOS
+Usage:
+       pi-slides [options]
+where [options] are:
+EOS
+  opt :path, 'image base directory', :type => :string, :default => '.'
+  opt :interval, 'seconds between image changes', :default => 30
+  opt :web, 'enable built in web interface', :default => true
+  opt :port, 'listen port for the web interface', :default => 4567
+  opt :testmode, 'run against echo server instead launching a real fim', :default => false
+  opt :fim_port, 'port to use for communicating with fim', :default => 9999
+  opt :fim_binary, 'path to fim binary', :default => '/usr/bin/fim'
+  opt :fim_opts, 'fim options', :default => '-d /dev/fb0'
+  opt :remote_fim, 'do not spawn fim, instead connect to this ip', :default => nil, :type => :string
+  opt :verbose, 'verbose mode', :default => false
+  opt :quiet, 'quiet mode', :default => false
+end
+
+PiSlides.logger.level = if opts[:quiet]
+                          9
+                        elsif opts[:verbose]
+                          0
+                        else
+                          1
+                        end
+
+image_path = File.expand_path opts[:path]
+raise 'invalid image directory' unless File.directory?(image_path)
+
+fim_host = opts[:remote_fim] || '127.0.0.1'
+
+unless opts[:remote_fim]
+  # launch fim running a netcat loop, or, for test mode, launch something
+  # pretending to be fim running a netcat loop:
+  netcat_command = "nc -l #{fim_host} #{opts[:fim_port]}"
+  fim_pid = if opts[:testmode]
+    fork do
+      PiSlides.debug "spawned echo server with pid #{Process.pid}"
+      loop do
+        PiSlides.info "fim: #{`#{netcat_command}`}"
+      end
+    end
+  else
+    spawn %{#{opts[:fim_binary]} #{opts[:fim_opts]} -c 'while(1){popen "#{netcat_command}";}'}
+  end
+  PiSlides.debug "fim pid is #{fim_pid}"
+end
+
+# start the show
+$slideshow = PiSlides::Slideshow.new(
+  PiSlides::ImageDir.new(image_path),
+  PiSlides::Fim.new(:host => fim_host, :port => opts[:fim_port]),
+  opts
+)
+$slideshow.run
+
+# do a clean shutdown
+Kernel.at_exit do
+  PiSlides.debug "bye!"
+  $slideshow.stop
+end
+
+if opts[:web]
+  # fire up sinatra
+  require 'pi_slides/web_frontend'
+  PiSlides::WebFrontend.set :port, opts[:port]
+  PiSlides::WebFrontend.run!
+else
+  # join the slideshow thread to prevent us from exiting
+  $slideshow.join
+end
+
